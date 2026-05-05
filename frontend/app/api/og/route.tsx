@@ -65,6 +65,19 @@ const FRAME = {
   overflow: "hidden" as const,
 };
 
+// Satori (the engine behind @vercel/og) crashes if any style value is
+// undefined — it does `.trim()` on every value as if it were a string.
+// Strip undefined props before handing styles to JSX.
+function prune<T extends object>(
+  style: T,
+): { [K in keyof T]-?: Exclude<T[K], undefined> } {
+  const out: Record<string, unknown> = {};
+  for (const k in style) {
+    if (style[k] !== undefined) out[k] = style[k];
+  }
+  return out as { [K in keyof T]-?: Exclude<T[K], undefined> };
+}
+
 function blobs(theme: Theme) {
   return (
     <>
@@ -559,14 +572,14 @@ function renderCard(d: Data, format: ShareFormat) {
       </div>
 
       <div
-        style={{
+        style={prune({
           display: "flex",
           flexDirection: format === "square" ? "column" : "row",
           alignItems: format === "square" ? undefined : "flex-end",
           gap: isPortrait ? 32 : 28,
           marginTop: isPortrait ? 40 : 18,
           position: "relative",
-        }}
+        })}
       >
         <div
           style={{
@@ -585,23 +598,23 @@ function renderCard(d: Data, format: ShareFormat) {
             }}
           >
             <div
-              style={{
+              style={prune({
                 display: "flex",
                 fontSize: c.commitsLabelFont,
                 color: "#d4d4d8",
                 fontWeight: 500,
                 lineHeight: isPortrait ? 1 : undefined,
-              }}
+              })}
             >
               commits
             </div>
             <div
-              style={{
+              style={prune({
                 display: "flex",
                 fontSize: c.commitsSubFont,
                 color: "#a1a1aa",
                 lineHeight: isPortrait ? 1 : undefined,
-              }}
+              })}
             >
               across {d.activeDays} active days
             </div>
@@ -620,7 +633,7 @@ function renderCard(d: Data, format: ShareFormat) {
       </div>
 
       <div
-        style={{
+        style={prune({
           display: "flex",
           flex: isPortrait ? 1 : undefined,
           flexDirection: "column",
@@ -628,9 +641,8 @@ function renderCard(d: Data, format: ShareFormat) {
           gap: c.bodyGap,
           marginTop: c.bodyMarginTop,
           paddingBottom: isPortrait ? 8 : undefined,
-          alignItems: format === "landscape" ? undefined : undefined,
           position: "relative",
-        }}
+        })}
       >
         {format === "landscape" ? (
           <div
