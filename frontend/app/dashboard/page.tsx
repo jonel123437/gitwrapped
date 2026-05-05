@@ -128,7 +128,7 @@ type ShareFormat = "landscape" | "square" | "portrait";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ format?: string }>;
+  searchParams: Promise<{ format?: string; year?: string }>;
 }) {
   const sp = await searchParams;
   const format: ShareFormat =
@@ -146,29 +146,65 @@ export default async function DashboardPage({
     redirect("/signin?callbackUrl=/dashboard");
   }
 
-  const yearLabel = new Date().getFullYear();
-  const fromDate = new Date(yearLabel, 0, 1).toISOString();
-  const toDate = new Date().toISOString();
-
-  const [user, repos, contributionsData] = await Promise.all([
+  const [user, repos] = await Promise.all([
     fetchGitHub<GitHubUser>("/user", token),
     fetchGitHub<GitHubRepo[]>(
       "/user/repos?per_page=100&sort=updated&affiliation=owner",
       token,
     ),
-    fetchGraphQL<ContributionsResponse>(
-      CONTRIBUTIONS_QUERY,
-      { username, from: fromDate, to: toDate },
-      token,
-    ),
   ]);
 
-  const contrib = contributionsData.user.contributionsCollection;
-  const allDays = contrib.contributionCalendar.weeks.flatMap(
-    (w) => w.contributionDays,
+  const currentYear = new Date().getFullYear();
+  const createdYear = new Date(user.created_at).getFullYear();
+  const availableYears: number[] = [];
+  for (let y = currentYear; y >= createdYear; y--) availableYears.push(y);
+
+  const rawYear = sp.year ?? "all";
+  const parsedYear = /^\d{4}$/.test(rawYear) ? Number(rawYear) : null;
+  const selectedYear: number | "all" =
+    parsedYear !== null && availableYears.includes(parsedYear) ? parsedYear : "all";
+
+  const created = new Date(user.created_at);
+  const yearsToFetch = selectedYear === "all" ? availableYears : [selectedYear];
+  const ranges = yearsToFetch.map((y) => {
+    const yearStart = new Date(Date.UTC(y, 0, 1));
+    const yearEnd =
+      y === currentYear ? new Date() : new Date(Date.UTC(y, 11, 31, 23, 59, 59));
+    const from = yearStart < created ? created : yearStart;
+    return { from: from.toISOString(), to: yearEnd.toISOString() };
+  });
+
+  const contributionResults = await Promise.all(
+    ranges.map(({ from, to }) =>
+      fetchGraphQL<ContributionsResponse>(
+        CONTRIBUTIONS_QUERY,
+        { username, from, to },
+        token,
+      ),
+    ),
   );
+
+  let totalCommits = 0;
+  let totalPRs = 0;
+  let totalReviews = 0;
+  let totalContributions = 0;
+  const allDays: ContributionDay[] = [];
+  for (const r of contributionResults) {
+    const c = r.user.contributionsCollection;
+    totalCommits += c.totalCommitContributions;
+    totalPRs += c.totalPullRequestContributions;
+    totalReviews += c.totalPullRequestReviewContributions;
+    totalContributions += c.contributionCalendar.totalContributions;
+    for (const w of c.contributionCalendar.weeks) {
+      for (const d of w.contributionDays) allDays.push(d);
+    }
+  }
+  allDays.sort((a, b) => a.date.localeCompare(b.date));
+
   const { longest: longestStreak, currentStreak } = calcStreaks(allDays);
-  const totalContributions = contrib.contributionCalendar.totalContributions;
+
+  const yearLabel = selectedYear === "all" ? "All time" : selectedYear.toString();
+  const yearKey = selectedYear === "all" ? "all" : selectedYear.toString();
 
   const activeDays = allDays.filter((d) => d.contributionCount > 0).length;
 
@@ -216,10 +252,10 @@ export default async function DashboardPage({
     username,
     name: user.name ?? username,
     avatar: user.avatar_url,
-    year: yearLabel.toString(),
-    commits: contrib.totalCommitContributions.toString(),
-    prs: contrib.totalPullRequestContributions.toString(),
-    reviews: contrib.totalPullRequestReviewContributions.toString(),
+    year: yearLabel,
+    commits: totalCommits.toString(),
+    prs: totalPRs.toString(),
+    reviews: totalReviews.toString(),
     streak: longestStreak.toString(),
     total: totalContributions.toString(),
     topLang: topLanguages[0]?.[0] ?? "",
@@ -232,7 +268,7 @@ export default async function DashboardPage({
     format,
   });
   const shareImageUrl = `/api/og?${shareParams.toString()}`;
-  const shareFilename = `git-wrapped-${username}-${yearLabel}-${format}.png`;
+  const shareFilename = `git-wrapped-${username}-${yearKey}-${format}.png`;
 
   const formats: { id: ShareFormat; label: string; aspect: string }[] = [
     { id: "landscape", label: "Landscape", aspect: "1200×630" },
@@ -249,14 +285,14 @@ export default async function DashboardPage({
   return (
     <div className="relative flex flex-1 flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="sticky top-0 z-40 border-b border-zinc-200/60 bg-zinc-50/80 backdrop-blur-md dark:border-zinc-800/60 dark:bg-zinc-950/80">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900">
               ⌘
             </span>
-            <span className="text-lg tracking-tight">git.wrapped</span>
+            <span className="text-base tracking-tight sm:text-lg">git.wrapped</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <a
               href={user.html_url}
               target="_blank"
@@ -276,7 +312,7 @@ export default async function DashboardPage({
             >
               <button
                 type="submit"
-                className="rounded-full border border-zinc-200 bg-white/70 px-4 py-2 text-sm font-medium text-zinc-700 backdrop-blur transition-all hover:bg-white hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 text-xs font-medium text-zinc-700 backdrop-blur transition-all hover:bg-white hover:text-zinc-900 sm:px-4 sm:py-2 sm:text-sm dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
               >
                 Sign out
               </button>
@@ -285,8 +321,8 @@ export default async function DashboardPage({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-6 pb-24">
-        <section className="relative overflow-hidden py-16">
+      <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
+        <section className="relative overflow-hidden py-10 sm:py-16">
           <div
             aria-hidden
             className="hero-glow pointer-events-none absolute left-1/2 top-0 -z-10 h-72 w-[36rem] max-w-[90vw] -translate-x-1/2 rounded-full bg-gradient-to-br from-emerald-400/25 via-sky-400/15 to-indigo-500/25 blur-3xl dark:from-emerald-500/15 dark:via-sky-500/10 dark:to-indigo-500/20"
@@ -302,7 +338,7 @@ export default async function DashboardPage({
                 alt={user.login}
                 width={120}
                 height={120}
-                className="relative rounded-full ring-4 ring-white shadow-xl shadow-zinc-900/10 dark:ring-zinc-900 dark:shadow-black/30"
+                className="relative h-24 w-24 rounded-full ring-4 ring-white shadow-xl shadow-zinc-900/10 sm:h-[120px] sm:w-[120px] dark:ring-zinc-900 dark:shadow-black/30"
                 unoptimized
               />
             </div>
@@ -311,7 +347,7 @@ export default async function DashboardPage({
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
                 Member since {memberSinceYear}
               </span>
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
                 {user.name ?? user.login}
               </h1>
               <p className="mt-1 text-zinc-500">@{user.login}</p>
@@ -347,31 +383,54 @@ export default async function DashboardPage({
         </section>
 
         <section className="reveal">
-          <div className="mb-4 flex items-baseline justify-between">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h2 className="text-sm font-medium uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-              Your {yearLabel}
+              {selectedYear === "all" ? "All-time stats" : `Your ${yearLabel}`}
             </h2>
             <p className="text-xs text-zinc-500 tabular-nums">
               {totalContributions.toLocaleString()} total contributions
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-4 sm:grid-rows-2">
+          <div className="mb-4 flex max-w-full gap-1 overflow-x-auto rounded-full border border-zinc-200 bg-white p-1 text-xs sm:text-sm dark:border-zinc-800 dark:bg-zinc-900">
+            {(["all", ...availableYears.map(String)] as const).map((y) => {
+              const active = y === yearKey;
+              const params = new URLSearchParams();
+              if (y !== "all") params.set("year", y);
+              if (format !== "landscape") params.set("format", format);
+              const qs = params.toString();
+              return (
+                <Link
+                  key={y}
+                  href={`/dashboard${qs ? `?${qs}` : ""}`}
+                  scroll={false}
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition-colors sm:px-4 ${
+                    active
+                      ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+                      : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  {y === "all" ? "All time" : y}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-4 sm:grid-rows-2 sm:gap-4">
             <BigStat
               className="sm:col-span-2 sm:row-span-2"
               accent="emerald"
               label="Commits"
-              value={contrib.totalCommitContributions}
+              value={totalCommits}
               subtitle={`Across ${ownRepos.length} repositories`}
             />
             <Stat
               accent="sky"
               label="Pull requests"
-              value={contrib.totalPullRequestContributions}
+              value={totalPRs}
             />
             <Stat
               accent="indigo"
               label="Reviews"
-              value={contrib.totalPullRequestReviewContributions}
+              value={totalReviews}
             />
             <Stat
               className="sm:col-span-2"
@@ -388,7 +447,7 @@ export default async function DashboardPage({
           </div>
         </section>
 
-        <section className="reveal mt-10 grid gap-6 lg:grid-cols-2">
+        <section className="reveal mt-8 grid gap-4 sm:mt-10 sm:gap-6 lg:grid-cols-2">
           <Card
             eyebrow="Languages"
             eyebrowAccent="emerald"
@@ -436,14 +495,14 @@ export default async function DashboardPage({
             ) : (
               <ul className="-mx-2 space-y-1">
                 {topRepos.map((r) => (
-                  <li key={r.id}>
+                  <li key={r.id} className="min-w-0">
                     <a
                       href={r.html_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-start justify-between gap-4 rounded-xl px-2 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                      className="group flex w-full items-start justify-between gap-4 rounded-xl px-2 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate font-medium group-hover:text-zinc-950 dark:group-hover:text-zinc-50">
                           {r.name}
                         </p>
@@ -474,8 +533,8 @@ export default async function DashboardPage({
           </Card>
         </section>
 
-        <section className="reveal mt-12">
-          <div className="mb-4 flex items-baseline justify-between">
+        <section className="reveal mt-10 sm:mt-12">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h2 className="text-sm font-medium uppercase tracking-widest text-violet-600 dark:text-violet-400">
               Share your wrapped
             </h2>
@@ -484,15 +543,19 @@ export default async function DashboardPage({
             </p>
           </div>
 
-          <div className="mb-4 inline-flex rounded-full border border-zinc-200 bg-white p-1 text-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="mb-4 inline-flex max-w-full overflow-x-auto rounded-full border border-zinc-200 bg-white p-1 text-xs sm:text-sm dark:border-zinc-800 dark:bg-zinc-900">
             {formats.map((f) => {
               const active = f.id === format;
+              const params = new URLSearchParams();
+              if (yearKey !== "all") params.set("year", yearKey);
+              if (f.id !== "landscape") params.set("format", f.id);
+              const qs = params.toString();
               return (
                 <Link
                   key={f.id}
-                  href={`/dashboard?format=${f.id}#share`}
+                  href={`/dashboard${qs ? `?${qs}` : ""}#share`}
                   scroll={false}
-                  className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition-colors sm:px-4 ${
                     active
                       ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -509,7 +572,7 @@ export default async function DashboardPage({
             className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="grid gap-0 lg:grid-cols-[3fr_2fr]">
-              <div className="flex items-center justify-center bg-zinc-950 p-6">
+              <div className="flex items-center justify-center bg-zinc-950 p-4 sm:p-6">
                 <SharePreview
                   src={shareImageUrl}
                   alt={`Your git.wrapped ${format} share card`}
@@ -517,8 +580,8 @@ export default async function DashboardPage({
                   aspectClass={`w-full ${previewAspectClass}`}
                 />
               </div>
-              <div className="flex flex-col justify-center gap-4 p-8">
-                <h3 className="text-2xl font-semibold tracking-tight">
+              <div className="flex flex-col justify-center gap-4 p-6 sm:p-8">
+                <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {formats.find((f) => f.id === format)?.label} card
                 </h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -588,17 +651,17 @@ function Stat({
 }) {
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-black/20 ${className}`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-900/5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-black/20 ${className}`}
     >
       <span
         className={`inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${accentMap[accent]}`}
       >
         {label}
       </span>
-      <p className="mt-4 flex items-baseline gap-1.5 text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+      <p className="mt-3 flex items-baseline gap-1.5 text-3xl font-semibold tracking-tight tabular-nums sm:mt-4 sm:text-4xl md:text-5xl">
         {value.toLocaleString()}
         {suffix && (
-          <span className="text-base font-medium text-zinc-400 sm:text-lg">
+          <span className="text-sm font-medium text-zinc-400 sm:text-base md:text-lg">
             {suffix}
           </span>
         )}
@@ -625,7 +688,7 @@ function BigStat({
 }) {
   return (
     <div
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-white via-emerald-50/40 to-sky-50/30 p-8 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-2xl hover:shadow-emerald-500/10 dark:border-zinc-800 dark:from-zinc-900 dark:via-emerald-950/20 dark:to-sky-950/20 dark:hover:border-zinc-700 ${className}`}
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-white via-emerald-50/40 to-sky-50/30 p-6 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-2xl hover:shadow-emerald-500/10 sm:p-8 dark:border-zinc-800 dark:from-zinc-900 dark:via-emerald-950/20 dark:to-sky-950/20 dark:hover:border-zinc-700 ${className}`}
     >
       <div
         aria-hidden
@@ -636,8 +699,8 @@ function BigStat({
       >
         {label}
       </span>
-      <div className="relative mt-6">
-        <p className="bg-gradient-to-br from-zinc-900 to-zinc-700 bg-clip-text text-7xl font-semibold tracking-tight text-transparent tabular-nums sm:text-8xl dark:from-zinc-100 dark:to-zinc-300">
+      <div className="relative mt-4 sm:mt-6">
+        <p className="bg-gradient-to-br from-zinc-900 to-zinc-700 bg-clip-text text-5xl font-semibold tracking-tight text-transparent tabular-nums sm:text-7xl md:text-8xl dark:from-zinc-100 dark:to-zinc-300">
           {value.toLocaleString()}
         </p>
         {subtitle && (
@@ -662,7 +725,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-black/20">
+    <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 transition-all hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-900/5 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 dark:hover:shadow-black/20">
       <div className="mb-5">
         <span
           className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${accentMap[eyebrowAccent]}`}
