@@ -70,11 +70,23 @@ export function SharePreview({
 
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-zinc-900/85 p-1 text-white shadow-lg backdrop-blur">
             <ZoomButton
-              onClick={() => setZoom((z) => +Math.max(MIN_ZOOM, z - STEP).toFixed(2))}
+              onClick={() =>
+                setZoom((z) => +Math.max(MIN_ZOOM, z - STEP).toFixed(2))
+              }
               disabled={zoom <= MIN_ZOOM}
               label="Zoom out"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 <line x1="8" y1="11" x2="14" y2="11" />
@@ -91,11 +103,23 @@ export function SharePreview({
             </button>
 
             <ZoomButton
-              onClick={() => setZoom((z) => +Math.min(MAX_ZOOM, z + STEP).toFixed(2))}
+              onClick={() =>
+                setZoom((z) => +Math.min(MAX_ZOOM, z + STEP).toFixed(2))
+              }
               disabled={zoom >= MAX_ZOOM}
               label="Zoom in"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 <line x1="11" y1="8" x2="11" y2="14" />
@@ -108,7 +132,7 @@ export function SharePreview({
             type="button"
             onClick={closeModal}
             aria-label="Close"
-            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900/85 text-white shadow-lg backdrop-blur transition-colors hover:bg-zinc-800"
+            className="absolute top-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900/85 text-white shadow-lg backdrop-blur transition-colors hover:bg-zinc-800"
           >
             <svg
               width="18"

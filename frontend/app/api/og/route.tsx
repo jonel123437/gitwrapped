@@ -644,7 +644,12 @@ function renderPortrait(d: Data) {
           {d.name}
         </div>
         <div
-          style={{ display: "flex", fontSize: 32, color: "#a1a1aa", marginTop: 4 }}
+          style={{
+            display: "flex",
+            fontSize: 32,
+            color: "#a1a1aa",
+            marginTop: 4,
+          }}
         >
           @{d.username}
         </div>

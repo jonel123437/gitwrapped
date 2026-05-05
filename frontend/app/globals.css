@@ -47,7 +47,8 @@ body {
 }
 
 @keyframes hero-float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {

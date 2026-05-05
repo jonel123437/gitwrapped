@@ -97,7 +97,10 @@ async function fetchGraphQL<T>(
   if (!res.ok) {
     throw new Error(`GraphQL request failed: ${res.status}`);
   }
-  const json = (await res.json()) as { data?: T; errors?: { message: string }[] };
+  const json = (await res.json()) as {
+    data?: T;
+    errors?: { message: string }[];
+  };
   if (json.errors?.length) {
     throw new Error(json.errors[0].message);
   }
@@ -132,7 +135,9 @@ export default async function DashboardPage({
 }) {
   const sp = await searchParams;
   const format: ShareFormat =
-    sp.format === "portrait" || sp.format === "square" ? sp.format : "landscape";
+    sp.format === "portrait" || sp.format === "square"
+      ? sp.format
+      : "landscape";
 
   const session = await auth();
 
@@ -162,14 +167,18 @@ export default async function DashboardPage({
   const rawYear = sp.year ?? "all";
   const parsedYear = /^\d{4}$/.test(rawYear) ? Number(rawYear) : null;
   const selectedYear: number | "all" =
-    parsedYear !== null && availableYears.includes(parsedYear) ? parsedYear : "all";
+    parsedYear !== null && availableYears.includes(parsedYear)
+      ? parsedYear
+      : "all";
 
   const created = new Date(user.created_at);
   const yearsToFetch = selectedYear === "all" ? availableYears : [selectedYear];
   const ranges = yearsToFetch.map((y) => {
     const yearStart = new Date(Date.UTC(y, 0, 1));
     const yearEnd =
-      y === currentYear ? new Date() : new Date(Date.UTC(y, 11, 31, 23, 59, 59));
+      y === currentYear
+        ? new Date()
+        : new Date(Date.UTC(y, 11, 31, 23, 59, 59));
     const from = yearStart < created ? created : yearStart;
     return { from: from.toISOString(), to: yearEnd.toISOString() };
   });
@@ -203,7 +212,8 @@ export default async function DashboardPage({
 
   const { longest: longestStreak, currentStreak } = calcStreaks(allDays);
 
-  const yearLabel = selectedYear === "all" ? "All time" : selectedYear.toString();
+  const yearLabel =
+    selectedYear === "all" ? "All time" : selectedYear.toString();
   const yearKey = selectedYear === "all" ? "all" : selectedYear.toString();
 
   const activeDays = allDays.filter((d) => d.contributionCount > 0).length;
@@ -214,8 +224,18 @@ export default async function DashboardPage({
     monthTotals.set(m, (monthTotals.get(m) ?? 0) + d.contributionCount);
   }
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   let bestMonthIdx = 0;
   let bestMonthCount = -1;
@@ -290,7 +310,9 @@ export default async function DashboardPage({
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900">
               ⌘
             </span>
-            <span className="text-base tracking-tight sm:text-lg">git.wrapped</span>
+            <span className="text-base tracking-tight sm:text-lg">
+              git.wrapped
+            </span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <a
@@ -299,7 +321,13 @@ export default async function DashboardPage({
               rel="noopener noreferrer"
               className="hidden items-center gap-2 rounded-full border border-zinc-200 bg-white/70 px-3 py-1.5 text-sm font-medium text-zinc-600 backdrop-blur transition-all hover:bg-white hover:text-zinc-900 sm:inline-flex dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                aria-hidden
+              >
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" />
               </svg>
               View on GitHub
@@ -321,24 +349,24 @@ export default async function DashboardPage({
         </div>
       </header>
 
-      <main className="mx-auto w-full min-w-0 max-w-6xl px-4 pb-16 sm:px-6 sm:pb-24">
+      <main className="mx-auto w-full max-w-6xl min-w-0 px-4 pb-16 sm:px-6 sm:pb-24">
         <section className="relative overflow-hidden py-10 sm:py-16">
           <div
             aria-hidden
-            className="hero-glow pointer-events-none absolute left-1/2 top-0 -z-10 h-72 w-[36rem] max-w-[90vw] -translate-x-1/2 rounded-full bg-gradient-to-br from-emerald-400/25 via-sky-400/15 to-indigo-500/25 blur-3xl dark:from-emerald-500/15 dark:via-sky-500/10 dark:to-indigo-500/20"
+            className="hero-glow pointer-events-none absolute top-0 left-1/2 -z-10 h-72 w-[36rem] max-w-[90vw] -translate-x-1/2 rounded-full bg-gradient-to-br from-emerald-400/25 via-sky-400/15 to-indigo-500/25 blur-3xl dark:from-emerald-500/15 dark:via-sky-500/10 dark:to-indigo-500/20"
           />
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
             <div className="relative">
               <div
                 aria-hidden
-                className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-emerald-400 via-sky-400 to-indigo-500 blur-md opacity-60"
+                className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-emerald-400 via-sky-400 to-indigo-500 opacity-60 blur-md"
               />
               <Image
                 src={user.avatar_url}
                 alt={user.login}
                 width={120}
                 height={120}
-                className="relative h-24 w-24 rounded-full ring-4 ring-white shadow-xl shadow-zinc-900/10 sm:h-[120px] sm:w-[120px] dark:ring-zinc-900 dark:shadow-black/30"
+                className="relative h-24 w-24 rounded-full shadow-xl ring-4 shadow-zinc-900/10 ring-white sm:h-[120px] sm:w-[120px] dark:shadow-black/30 dark:ring-zinc-900"
                 unoptimized
               />
             </div>
@@ -384,7 +412,7 @@ export default async function DashboardPage({
 
         <section className="reveal">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h2 className="text-sm font-medium uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+            <h2 className="text-sm font-medium tracking-widest text-emerald-600 uppercase dark:text-emerald-400">
               {selectedYear === "all" ? "All-time stats" : `Your ${yearLabel}`}
             </h2>
             <p className="text-xs text-zinc-500 tabular-nums">
@@ -403,7 +431,7 @@ export default async function DashboardPage({
                   key={y}
                   href={`/dashboard${qs ? `?${qs}` : ""}`}
                   scroll={false}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition-colors sm:px-4 ${
+                  className={`rounded-full px-3 py-1.5 font-medium whitespace-nowrap transition-colors sm:px-4 ${
                     active
                       ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -422,16 +450,8 @@ export default async function DashboardPage({
               value={totalCommits}
               subtitle={`Across ${ownRepos.length} repositories`}
             />
-            <Stat
-              accent="sky"
-              label="Pull requests"
-              value={totalPRs}
-            />
-            <Stat
-              accent="indigo"
-              label="Reviews"
-              value={totalReviews}
-            />
+            <Stat accent="sky" label="Pull requests" value={totalPRs} />
+            <Stat accent="indigo" label="Reviews" value={totalReviews} />
             <Stat
               className="sm:col-span-2"
               accent="amber"
@@ -469,7 +489,9 @@ export default async function DashboardPage({
                           </span>
                           {lang}
                         </span>
-                        <span className="text-zinc-500 tabular-nums">{pct}%</span>
+                        <span className="text-zinc-500 tabular-nums">
+                          {pct}%
+                        </span>
                       </div>
                       <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
                         <div
@@ -535,7 +557,7 @@ export default async function DashboardPage({
 
         <section className="reveal mt-10 sm:mt-12">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h2 className="text-sm font-medium uppercase tracking-widest text-violet-600 dark:text-violet-400">
+            <h2 className="text-sm font-medium tracking-widest text-violet-600 uppercase dark:text-violet-400">
               Share your wrapped
             </h2>
             <p className="text-xs text-zinc-500 tabular-nums">
@@ -555,7 +577,7 @@ export default async function DashboardPage({
                   key={f.id}
                   href={`/dashboard${qs ? `?${qs}` : ""}#share`}
                   scroll={false}
-                  className={`whitespace-nowrap rounded-full px-3 py-1.5 font-medium transition-colors sm:px-4 ${
+                  className={`rounded-full px-3 py-1.5 font-medium whitespace-nowrap transition-colors sm:px-4 ${
                     active
                       ? "bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
                       : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -626,11 +648,14 @@ export default async function DashboardPage({
 }
 
 const accentMap: Record<string, string> = {
-  emerald: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400",
+  emerald:
+    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400",
   sky: "bg-sky-500/10 text-sky-600 ring-sky-500/20 dark:text-sky-400",
-  indigo: "bg-indigo-500/10 text-indigo-600 ring-indigo-500/20 dark:text-indigo-400",
+  indigo:
+    "bg-indigo-500/10 text-indigo-600 ring-indigo-500/20 dark:text-indigo-400",
   amber: "bg-amber-500/10 text-amber-600 ring-amber-500/20 dark:text-amber-400",
-  violet: "bg-violet-500/10 text-violet-600 ring-violet-500/20 dark:text-violet-400",
+  violet:
+    "bg-violet-500/10 text-violet-600 ring-violet-500/20 dark:text-violet-400",
   rose: "bg-rose-500/10 text-rose-600 ring-rose-500/20 dark:text-rose-400",
 };
 
@@ -666,9 +691,7 @@ function Stat({
           </span>
         )}
       </p>
-      {subtitle && (
-        <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>
-      )}
+      {subtitle && <p className="mt-2 text-sm text-zinc-500">{subtitle}</p>}
     </div>
   );
 }
@@ -692,7 +715,7 @@ function BigStat({
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-400/30 to-sky-400/20 blur-3xl"
+        className="pointer-events-none absolute -top-16 -right-16 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-400/30 to-sky-400/20 blur-3xl"
       />
       <span
         className={`relative inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${accentMap[accent]}`}
@@ -703,9 +726,7 @@ function BigStat({
         <p className="bg-gradient-to-br from-zinc-900 to-zinc-700 bg-clip-text text-5xl font-semibold tracking-tight text-transparent tabular-nums sm:text-7xl md:text-8xl dark:from-zinc-100 dark:to-zinc-300">
           {value.toLocaleString()}
         </p>
-        {subtitle && (
-          <p className="mt-3 text-sm text-zinc-500">{subtitle}</p>
-        )}
+        {subtitle && <p className="mt-3 text-sm text-zinc-500">{subtitle}</p>}
       </div>
     </div>
   );
@@ -733,9 +754,7 @@ function Card({
           {eyebrow}
         </span>
         <h2 className="mt-3 text-lg font-semibold">{title}</h2>
-        {subtitle && (
-          <p className="text-sm text-zinc-500">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-sm text-zinc-500">{subtitle}</p>}
       </div>
       {children}
     </div>

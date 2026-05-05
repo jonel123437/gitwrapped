@@ -17,13 +17,22 @@ export default async function Home() {
             <span className="text-lg tracking-tight">git.wrapped</span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-zinc-600 sm:flex dark:text-zinc-400">
-            <a href="#features" className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
+            <a
+              href="#features"
+              className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
               Features
             </a>
-            <a href="#how-it-works" className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
+            <a
+              href="#how-it-works"
+              className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
               How it works
             </a>
-            <a href="#faq" className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100">
+            <a
+              href="#faq"
+              className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
               FAQ
             </a>
           </nav>
@@ -59,13 +68,13 @@ export default async function Home() {
         <section className="relative mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-6xl flex-col items-center justify-center overflow-hidden px-6 py-16 text-center">
           <div
             aria-hidden
-            className="hero-glow pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[36rem] w-[36rem] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-400/30 via-sky-400/20 to-indigo-500/30 blur-3xl dark:from-emerald-500/20 dark:via-sky-500/10 dark:to-indigo-500/25"
+            className="hero-glow pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[36rem] w-[36rem] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-400/30 via-sky-400/20 to-indigo-500/30 blur-3xl dark:from-emerald-500/20 dark:via-sky-500/10 dark:to-indigo-500/25"
           />
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/70 px-3 py-1 text-xs font-medium text-zinc-600 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
             Your year in code, beautifully wrapped.
           </span>
-          <h1 className="max-w-3xl text-5xl font-semibold leading-[1.1] tracking-tight sm:text-6xl md:text-7xl">
+          <h1 className="max-w-3xl text-5xl leading-[1.1] font-semibold tracking-tight sm:text-6xl md:text-7xl">
             Spotify Wrapped,{" "}
             <span className="bg-gradient-to-r from-emerald-500 via-sky-500 to-indigo-500 bg-clip-text text-transparent">
               but for your code.
@@ -82,7 +91,9 @@ export default async function Home() {
               className="group flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 shadow-lg shadow-zinc-900/10 transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/10 dark:hover:bg-zinc-300"
             >
               {isAuthed ? "Open your dashboard" : "Connect with GitHub"}
-              <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              <span className="transition-transform group-hover:translate-x-0.5">
+                →
+              </span>
             </Link>
             <a
               href="#how-it-works"
@@ -100,7 +111,17 @@ export default async function Home() {
             aria-label="Scroll to features"
             className="absolute bottom-8 left-1/2 -translate-x-1/2 text-zinc-400 transition-colors hover:text-zinc-700 dark:hover:text-zinc-200"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="animate-bounce"
+            >
               <path d="M12 5v14M19 12l-7 7-7-7" />
             </svg>
           </a>
@@ -112,7 +133,7 @@ export default async function Home() {
         >
           <div className="reveal mx-auto w-full max-w-6xl px-6 py-24">
             <div className="mb-14 text-center">
-              <p className="mb-3 text-sm font-medium uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+              <p className="mb-3 text-sm font-medium tracking-widest text-emerald-600 uppercase dark:text-emerald-400">
                 Features
               </p>
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -169,7 +190,7 @@ export default async function Home() {
         >
           <div className="reveal mx-auto w-full max-w-6xl px-6 py-24">
             <div className="mb-14 text-center">
-              <p className="mb-3 text-sm font-medium uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+              <p className="mb-3 text-sm font-medium tracking-widest text-indigo-600 uppercase dark:text-indigo-400">
                 How it works
               </p>
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -177,9 +198,21 @@ export default async function Home() {
               </h2>
             </div>
             <ol className="relative grid gap-6 sm:grid-cols-3">
-              <Step n={1} title="Sign in with GitHub" body="Read-only access to your public contributions. Revoke anytime." />
-              <Step n={2} title="We crunch the numbers" body="Commits, PRs, reviews, languages, hours, weekdays — all aggregated." />
-              <Step n={3} title="Download & share" body="Pick a card format, download the PNG, post it. Done." />
+              <Step
+                n={1}
+                title="Sign in with GitHub"
+                body="Read-only access to your public contributions. Revoke anytime."
+              />
+              <Step
+                n={2}
+                title="We crunch the numbers"
+                body="Commits, PRs, reviews, languages, hours, weekdays — all aggregated."
+              />
+              <Step
+                n={3}
+                title="Download & share"
+                body="Pick a card format, download the PNG, post it. Done."
+              />
             </ol>
           </div>
         </section>
@@ -190,7 +223,7 @@ export default async function Home() {
         >
           <div className="reveal mx-auto w-full max-w-3xl px-6 py-24">
             <div className="mb-12 text-center">
-              <p className="mb-3 text-sm font-medium uppercase tracking-widest text-sky-600 dark:text-sky-400">
+              <p className="mb-3 text-sm font-medium tracking-widest text-sky-600 uppercase dark:text-sky-400">
                 FAQ
               </p>
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -221,7 +254,7 @@ export default async function Home() {
         <section className="relative overflow-hidden border-t border-zinc-200 dark:border-zinc-800">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-96 w-[40rem] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-400/20 to-indigo-500/20 blur-3xl"
+            className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-96 w-[40rem] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-emerald-400/20 to-indigo-500/20 blur-3xl"
           />
           <div className="reveal mx-auto w-full max-w-6xl px-6 py-24 text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -235,7 +268,9 @@ export default async function Home() {
               className="group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 shadow-lg shadow-zinc-900/10 transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/10 dark:hover:bg-zinc-300"
             >
               {isAuthed ? "Open your dashboard" : "Connect with GitHub"}
-              <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              <span className="transition-transform group-hover:translate-x-0.5">
+                →
+              </span>
             </Link>
           </div>
         </section>
@@ -260,12 +295,15 @@ export default async function Home() {
 }
 
 const accentMap: Record<string, string> = {
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20",
-  indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20",
+  emerald:
+    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20",
+  indigo:
+    "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20",
   sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-sky-500/20",
   amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20",
   rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-rose-500/20",
-  violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-violet-500/20",
+  violet:
+    "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-violet-500/20",
 };
 
 function Feature({

@@ -22,6 +22,7 @@ Most existing GitHub stats tools focus on README-embeddable SVG widgets (numbers
 ## Tech Stack
 
 ### Frontend
+
 - **Framework:** Next.js 15 (App Router) + TypeScript
 - **Styling:** TailwindCSS
 - **UI components:** shadcn/ui
@@ -30,6 +31,7 @@ Most existing GitHub stats tools focus on README-embeddable SVG widgets (numbers
 - **Image generation:** `@vercel/og` (Satori) for share card PNGs
 
 ### Backend
+
 - **Framework:** NestJS + TypeScript
 - **API style:** GraphQL (Apollo)
 - **ORM:** Prisma
@@ -38,11 +40,13 @@ Most existing GitHub stats tools focus on README-embeddable SVG widgets (numbers
 - **Background jobs:** BullMQ
 
 ### External APIs
+
 - **GitHub GraphQL API** — primary data source
 - **GitHub REST API** — fallback for endpoints not in GraphQL
 - **GH Archive** (optional) — for historical data without rate-limit pressure
 
 ### Infrastructure
+
 - **Frontend hosting:** Vercel
 - **Backend hosting:** Railway (or Render)
 - **Database:** Vercel Postgres / Neon / Supabase
@@ -107,14 +111,14 @@ npm run dev:api   # Backend on http://localhost:4000/graphql
 
 ### Common commands
 
-| Command | What it does |
-|---------|--------------|
-| `npm run dev` | Run both web and API in parallel |
-| `npm run build` | Build all apps |
-| `npm run lint` | Lint all code |
-| `npm run test` | Run unit tests (Jest) |
-| `npm run test:e2e` | Run E2E tests (Playwright) |
-| `npx prisma studio` | Open Prisma DB GUI |
+| Command             | What it does                     |
+| ------------------- | -------------------------------- |
+| `npm run dev`       | Run both web and API in parallel |
+| `npm run build`     | Build all apps                   |
+| `npm run lint`      | Lint all code                    |
+| `npm run test`      | Run unit tests (Jest)            |
+| `npm run test:e2e`  | Run E2E tests (Playwright)       |
+| `npx prisma studio` | Open Prisma DB GUI               |
 
 ## Architecture Notes
 
@@ -197,6 +201,7 @@ model ShareCard {
 ## GitHub API Notes
 
 ### Required OAuth scopes
+
 - `read:user` — basic profile
 - `repo` — to access private contribution counts (optional, only if user opts in)
 
@@ -221,18 +226,29 @@ query UserContributions($username: String!, $from: DateTime!, $to: DateTime!) {
         }
       }
       commitContributionsByRepository(maxRepositories: 25) {
-        repository { name url }
-        contributions { totalCount }
+        repository {
+          name
+          url
+        }
+        contributions {
+          totalCount
+        }
       }
     }
     repositoriesContributedTo(first: 100) {
-      nodes { name primaryLanguage { name } }
+      nodes {
+        name
+        primaryLanguage {
+          name
+        }
+      }
     }
   }
 }
 ```
 
 ### Rate limit handling
+
 - Always check `X-RateLimit-Remaining` header
 - If close to limit, defer to background job
 - Cache aggressively in Redis
@@ -244,14 +260,16 @@ query UserContributions($username: String!, $from: DateTime!, $to: DateTime!) {
 ```ts
 function detectPersonality(commitsByHour: number[]): string {
   const total = commitsByHour.reduce((a, b) => a + b, 0);
-  const nightCommits = commitsByHour.slice(21, 24).concat(commitsByHour.slice(0, 3))
+  const nightCommits = commitsByHour
+    .slice(21, 24)
+    .concat(commitsByHour.slice(0, 3))
     .reduce((a, b) => a + b, 0);
   const morningCommits = commitsByHour.slice(5, 9).reduce((a, b) => a + b, 0);
 
-  if (nightCommits / total > 0.5) return 'night-owl';
-  if (morningCommits / total > 0.4) return 'early-bird';
+  if (nightCommits / total > 0.5) return "night-owl";
+  if (morningCommits / total > 0.4) return "early-bird";
   // ... other personalities
-  return 'balanced';
+  return "balanced";
 }
 ```
 
@@ -280,28 +298,33 @@ Aim for 70% coverage on business logic, lower on UI components.
 ## Build Phases
 
 ### Phase 1 — Foundation (Week 1)
+
 - Next.js + Tailwind setup
 - NextAuth GitHub login
 - Basic dashboard showing user profile
 
 ### Phase 2 — Real data (Week 2)
+
 - NestJS backend with GraphQL
 - GitHub API integration with caching
 - Display real stats with Recharts
 
 ### Phase 3 — Insights (Week 3)
+
 - Personality detection
 - Top language analysis
 - Streak calculation
 - Top collaborator detection
 
 ### Phase 4 — Sharing (Week 4)
+
 - @vercel/og PNG generation
 - Multiple card formats (square, story, banner)
 - Public profile pages
 - Deploy + analytics
 
 ### Phase 5 — Polish (Optional, Week 5+)
+
 - Year-over-year comparison
 - Team/organization mode
 - README badge embed
@@ -332,4 +355,4 @@ Aim for 70% coverage on business logic, lower on UI components.
 
 ---
 
-*This document should be updated as the project evolves. Keep it current — outdated docs are worse than no docs.*
+_This document should be updated as the project evolves. Keep it current — outdated docs are worse than no docs._
