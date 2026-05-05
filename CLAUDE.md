@@ -23,7 +23,7 @@ Most existing GitHub stats tools focus on README-embeddable SVG widgets (numbers
 
 ### Frontend
 
-- **Framework:** Next.js 15 (App Router) + TypeScript
+- **Framework:** Next.js 16 (App Router) + TypeScript — note: this version has breaking changes from your training data; consult `node_modules/next/dist/docs/` before writing new framework code
 - **Styling:** TailwindCSS
 - **UI components:** shadcn/ui
 - **Charts:** Recharts
@@ -56,37 +56,54 @@ Most existing GitHub stats tools focus on README-embeddable SVG widgets (numbers
 
 ## Project Structure
 
+The project is currently **frontend-only** — the NestJS backend in the original plan has not been built yet. All GitHub API calls are made directly from the Next.js server components / route handlers using the user's NextAuth session token. The structure below reflects what exists today; the original `apps/web` + `apps/api` monorepo layout is aspirational.
+
 ```
-git-wrapped/
-├── apps/
-│   ├── web/                 # Next.js frontend
-│   │   ├── app/
-│   │   │   ├── page.tsx              # Landing page
-│   │   │   ├── dashboard/page.tsx    # Logged-in dashboard
-│   │   │   ├── u/[username]/page.tsx # Public profile
-│   │   │   ├── share/[id]/page.tsx   # Share card preview
-│   │   │   └── api/
-│   │   │       ├── auth/             # NextAuth routes
-│   │   │       └── og/               # @vercel/og image generation
-│   │   ├── components/
-│   │   ├── lib/
-│   │   └── package.json
-│   └── api/                 # NestJS backend
-│       ├── src/
-│       │   ├── auth/
-│       │   ├── github/      # GitHub API integration
-│       │   ├── stats/       # Stats computation logic
-│       │   ├── users/
-│       │   ├── insights/    # "Night owl" etc. analysis
-│       │   └── main.ts
-│       ├── prisma/
-│       │   └── schema.prisma
-│       └── package.json
-├── packages/
-│   └── shared/              # Shared types, utils
-├── package.json
-└── CLAUDE.md
+gitwrapped/
+├── frontend/                          # Next.js 16 (App Router) app
+│   ├── app/
+│   │   ├── page.tsx                   # Landing page
+│   │   ├── layout.tsx                 # Root layout
+│   │   ├── globals.css
+│   │   ├── signin/page.tsx            # Custom sign-in page
+│   │   ├── dashboard/
+│   │   │   ├── page.tsx               # Logged-in dashboard (server component)
+│   │   │   └── share-preview.tsx      # Client component (zoom modal)
+│   │   └── api/
+│   │       ├── auth/[...nextauth]/    # NextAuth handler
+│   │       └── og/route.tsx           # @vercel/og share-card PNGs (edge runtime)
+│   ├── auth.ts                        # NextAuth config (GitHub provider)
+│   ├── lib/                           # Shared, framework-agnostic code
+│   │   ├── types/                     # *.types.ts — pure type declarations
+│   │   ├── constants/                 # *.constants.ts — static data tables, queries, enums-as-objects
+│   │   └── utils/                     # *.utils.ts — pure functions (fetchers, aggregators, parsers)
+│   ├── types/                         # Ambient TS module augmentations (e.g. next-auth.d.ts)
+│   └── public/
+├── CLAUDE.md                          # ← you are here
+└── package.json                       # Workspace root (runs frontend via concurrently)
 ```
+
+### `lib/` convention
+
+When adding shared code, pick the right folder by **what kind of value the module exports**, then suffix the filename with the folder's kind:
+
+| Folder           | File suffix      | What goes here                                                      | Example                                                      |
+| ---------------- | ---------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `lib/types/`     | `*.types.ts`     | `type` / `interface` declarations only                              | `share-card.types.ts` exports `ShareCardData`                |
+| `lib/constants/` | `*.constants.ts` | Frozen data, lookup tables, GraphQL query strings, enums-as-objects | `personality.constants.ts` exports the `THEMES` map          |
+| `lib/utils/`     | `*.utils.ts`     | Pure functions — fetchers, parsers, aggregators, formatters         | `insights.utils.ts` exports `calcStreaks`, `aggregateByTime` |
+
+Rules of thumb:
+
+- **A module is named after its domain, not its kind.** Group by topic (`personality.*`, `share-card.*`, `github.*`), then split into the three folders above. Don't create `helpers/` or `services/` — `utils/` is the bucket for now.
+- **Don't add `lib/hooks/`** until at least one hook is actually shared between two client components. Today the only client component is `share-preview.tsx` and its zoom state is used once.
+- **Don't add UI components to `lib/`.** Reusable React components belong in a top-level `components/` folder (not yet created — add it when a second page actually consumes a component).
+- **Server components / route handlers stay in `app/`.** They orchestrate; the heavy lifting (data fetching, math, type-narrowing) lives in `lib/utils/`.
+- **Page-local components stay in the page file.** Promote to `components/` only when used by a second page.
+
+### Why the OG route is fragile
+
+`app/api/og/route.tsx` runs on the **edge runtime** and uses **Satori** (via `@vercel/og`) to render JSX → PNG. Satori has a quirk: it calls `.trim()` on every CSS value as if it were a string, so **any `undefined` style prop crashes the request** with `Cannot read properties of undefined (reading 'trim')`. TypeScript and ESLint cannot detect this — the types accept `undefined`, the runtime does not. The route uses a `prune()` helper to strip `undefined` props before handing styles to JSX. When editing this file, never write `style={{ foo: cond ? value : undefined }}` directly — either wrap the object in `prune()` or use a spread-conditional: `...(cond ? { foo: value } : null)`.
 
 ## Development Workflow
 
