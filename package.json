@@ -1,0 +1,17 @@
+{
+  "name": "gitwrapped",
+  "version": "0.1.0",
+  "private": true,
+  "description": "git.wrapped — your year in code, beautifully wrapped.",
+  "scripts": {
+    "dev": "concurrently -k -n web -c blue \"npm --prefix frontend run dev\"",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint",
+    "install:all": "npm install && npm --prefix frontend install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

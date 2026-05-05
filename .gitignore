@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# OS / editor
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env files (each app's .env stays local)
+.env
+.env.*
+!.env.example
+
+# Build artifacts (per-app gitignores cover the rest)
+*.tsbuildinfo
