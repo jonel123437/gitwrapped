@@ -3,224 +3,25 @@ import { SharePreview } from "./share-preview";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-type GitHubUser = {
-  login: string;
-  name: string | null;
-  bio: string | null;
-  public_repos: number;
-  followers: number;
-  following: number;
-  avatar_url: string;
-  html_url: string;
-  created_at: string;
-};
-
-type GitHubRepo = {
-  id: number;
-  name: string;
-  full_name: string;
-  description: string | null;
-  language: string | null;
-  stargazers_count: number;
-  html_url: string;
-  fork: boolean;
-};
-
-async function fetchGitHub<T>(path: string, token: string): Promise<T> {
-  const res = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub ${path} failed: ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-type ContributionDay = { date: string; contributionCount: number };
-type ContributionsResponse = {
-  user: {
-    contributionsCollection: {
-      totalCommitContributions: number;
-      totalPullRequestContributions: number;
-      totalPullRequestReviewContributions: number;
-      totalIssueContributions: number;
-      contributionCalendar: {
-        totalContributions: number;
-        weeks: { contributionDays: ContributionDay[] }[];
-      };
-    };
-  };
-};
-
-const CONTRIBUTIONS_QUERY = /* GraphQL */ `
-  query Contributions($username: String!, $from: DateTime!, $to: DateTime!) {
-    user(login: $username) {
-      contributionsCollection(from: $from, to: $to) {
-        totalCommitContributions
-        totalPullRequestContributions
-        totalPullRequestReviewContributions
-        totalIssueContributions
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-async function fetchGraphQL<T>(
-  query: string,
-  variables: Record<string, unknown>,
-  token: string,
-): Promise<T> {
-  const res = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query, variables }),
-    next: { revalidate: 300 },
-  });
-  if (!res.ok) {
-    throw new Error(`GraphQL request failed: ${res.status}`);
-  }
-  const json = (await res.json()) as {
-    data?: T;
-    errors?: { message: string }[];
-  };
-  if (json.errors?.length) {
-    throw new Error(json.errors[0].message);
-  }
-  return json.data as T;
-}
-
-type Personality = {
-  key: string;
-  label: string;
-  tagline: string;
-};
-
-function detectPersonality(input: {
-  longestStreak: number;
-  weekendShare: number;
-  weekdayShare: number;
-  bestMonthShare: number;
-  bestMonth: string;
-  intensity: number;
-  activeDays: number;
-  numLangs: number;
-  topLangShare: number;
-  topLang: string;
-}): Personality {
-  const {
-    longestStreak,
-    weekendShare,
-    weekdayShare,
-    bestMonthShare,
-    bestMonth,
-    intensity,
-    activeDays,
-    numLangs,
-    topLangShare,
-    topLang,
-  } = input;
-
-  if (longestStreak >= 30) {
-    return {
-      key: "streak-master",
-      label: "Streak Master",
-      tagline: `${longestStreak} days in a row. relentless.`,
-    };
-  }
-  if (weekendShare >= 0.35) {
-    return {
-      key: "weekend-warrior",
-      label: "Weekend Warrior",
-      tagline: `${Math.round(weekendShare * 100)}% of commits land on Sat/Sun`,
-    };
-  }
-  if (weekdayShare >= 0.92 && activeDays >= 40) {
-    return {
-      key: "nine-to-fiver",
-      label: "Nine-to-Fiver",
-      tagline: "your weekends are commit-free",
-    };
-  }
-  if (bestMonthShare >= 0.3 && bestMonth) {
-    return {
-      key: "seasonal",
-      label: "Seasonal Coder",
-      tagline: `${Math.round(bestMonthShare * 100)}% of the year happened in ${bestMonth}`,
-    };
-  }
-  if (intensity >= 6) {
-    return {
-      key: "sprinter",
-      label: "Sprinter",
-      tagline: `${intensity.toFixed(1)} commits per active day`,
-    };
-  }
-  if (activeDays >= 250) {
-    return {
-      key: "marathoner",
-      label: "Marathoner",
-      tagline: `${activeDays} active days · barely a day off`,
-    };
-  }
-  if (numLangs >= 6) {
-    return {
-      key: "polyglot",
-      label: "Polyglot",
-      tagline: `${numLangs} languages shipped`,
-    };
-  }
-  if (topLangShare >= 0.7 && topLang) {
-    return {
-      key: "specialist",
-      label: "Specialist",
-      tagline: `${Math.round(topLangShare * 100)}% all-in on ${topLang}`,
-    };
-  }
-  return {
-    key: "balanced",
-    label: "Balanced Builder",
-    tagline: "steady, consistent, unbothered",
-  };
-}
-
-function calcStreaks(days: ContributionDay[]) {
-  let longest = 0;
-  let run = 0;
-  for (const d of days) {
-    if (d.contributionCount > 0) {
-      run += 1;
-      if (run > longest) longest = run;
-    } else {
-      run = 0;
-    }
-  }
-  let currentStreak = 0;
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (days[i].contributionCount > 0) currentStreak += 1;
-    else break;
-  }
-  return { longest, currentStreak };
-}
-
-type ShareFormat = "landscape" | "square" | "portrait";
+import { CONTRIBUTIONS_QUERY } from "@/lib/constants/github.constants";
+import { SHARE_FORMATS } from "@/lib/constants/share-formats.constants";
+import { fetchGitHub, fetchGraphQL } from "@/lib/utils/github.utils";
+import { aggregateByTime, calcStreaks } from "@/lib/utils/insights.utils";
+import { detectPersonality } from "@/lib/utils/personality.utils";
+import {
+  parseShareFormat,
+  getShareFormat,
+} from "@/lib/utils/share-formats.utils";
+import { buildShareParams } from "@/lib/utils/share-card.utils";
+import type {
+  ContributionDay,
+  ContributionsResponse,
+  GitHubRepo,
+  GitHubUser,
+} from "@/lib/types/github.types";
+import type { ShareFormat } from "@/lib/types/share-formats.types";
+import { accentMap } from "@/lib/constants/accent.constants";
+import type { AccentKey } from "@/lib/types/accent.types";
 
 export default async function DashboardPage({
   searchParams,
@@ -228,10 +29,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ format?: string; year?: string }>;
 }) {
   const sp = await searchParams;
-  const format: ShareFormat =
-    sp.format === "portrait" || sp.format === "square"
-      ? sp.format
-      : "landscape";
+  const format: ShareFormat = parseShareFormat(sp.format);
 
   const session = await auth();
 
@@ -312,37 +110,7 @@ export default async function DashboardPage({
 
   const activeDays = allDays.filter((d) => d.contributionCount > 0).length;
 
-  const monthTotals = new Map<number, number>();
-  const weekdayCounts = [0, 0, 0, 0, 0, 0, 0];
-  for (const d of allDays) {
-    const dt = new Date(d.date);
-    const m = dt.getUTCMonth();
-    monthTotals.set(m, (monthTotals.get(m) ?? 0) + d.contributionCount);
-    weekdayCounts[dt.getUTCDay()] += d.contributionCount;
-  }
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  let bestMonthIdx = 0;
-  let bestMonthCount = -1;
-  for (const [m, c] of monthTotals) {
-    if (c > bestMonthCount) {
-      bestMonthCount = c;
-      bestMonthIdx = m;
-    }
-  }
-  const bestMonth = bestMonthCount > 0 ? monthNames[bestMonthIdx] : "";
+  const { weekdayCounts, bestMonth, bestMonthCount } = aggregateByTime(allDays);
 
   const ownRepos = repos.filter((r) => !r.fork);
   const totalStars = ownRepos.reduce((sum, r) => sum + r.stargazers_count, 0);
@@ -388,23 +156,23 @@ export default async function DashboardPage({
     topLang: topLanguages[0]?.[0] ?? "",
   });
 
-  const shareParams = new URLSearchParams({
+  const shareParams = buildShareParams({
     username,
     name: user.name ?? username,
     avatar: user.avatar_url,
     year: yearLabel,
-    commits: totalCommits.toString(),
-    prs: totalPRs.toString(),
-    reviews: totalReviews.toString(),
-    streak: longestStreak.toString(),
-    total: totalContributions.toString(),
+    commits: totalCommits,
+    prs: totalPRs,
+    reviews: totalReviews,
+    streak: longestStreak,
+    total: totalContributions,
     topLang: topLanguages[0]?.[0] ?? "",
     topLang2,
     topLang3,
-    activeDays: activeDays.toString(),
+    activeDays,
     bestMonth,
     topRepo: topRepo?.name ?? "",
-    topRepoStars: (topRepo?.stargazers_count ?? 0).toString(),
+    topRepoStars: topRepo?.stargazers_count ?? 0,
     personalityKey: personality.key,
     personalityLabel: personality.label,
     personalityTagline: personality.tagline,
@@ -413,17 +181,8 @@ export default async function DashboardPage({
   const shareImageUrl = `/api/og?${shareParams.toString()}`;
   const shareFilename = `git-wrapped-${username}-${yearKey}-${format}.png`;
 
-  const formats: { id: ShareFormat; label: string; aspect: string }[] = [
-    { id: "landscape", label: "Landscape", aspect: "1200×630" },
-    { id: "square", label: "Square", aspect: "1080×1080" },
-    { id: "portrait", label: "Portrait", aspect: "1080×1920" },
-  ];
-  const previewAspectClass =
-    format === "portrait"
-      ? "aspect-[1080/1920] mx-auto max-w-[260px] sm:max-w-[300px]"
-      : format === "square"
-        ? "aspect-square mx-auto max-w-md"
-        : "aspect-[1200/630]";
+  const formats = SHARE_FORMATS;
+  const previewAspectClass = getShareFormat(format).previewClass;
 
   return (
     <div className="relative flex flex-1 flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
@@ -684,7 +443,7 @@ export default async function DashboardPage({
               Share your wrapped
             </h2>
             <p className="text-xs text-zinc-500 tabular-nums">
-              {formats.find((f) => f.id === format)?.aspect} PNG
+              {getShareFormat(format).aspect} PNG
             </p>
           </div>
 
@@ -727,14 +486,10 @@ export default async function DashboardPage({
               </div>
               <div className="flex flex-col justify-center gap-4 p-6 sm:p-8">
                 <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  {formats.find((f) => f.id === format)?.label} card
+                  {getShareFormat(format).label} card
                 </h3>
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {format === "portrait"
-                    ? "Made for Instagram, TikTok, and Facebook stories. 9:16."
-                    : format === "square"
-                      ? "Best for the Instagram feed and LinkedIn posts. 1:1."
-                      : "Twitter, LinkedIn, and Open Graph previews. 1.91:1."}
+                  {getShareFormat(format).description}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3">
                   <a
@@ -770,18 +525,6 @@ export default async function DashboardPage({
   );
 }
 
-const accentMap: Record<string, string> = {
-  emerald:
-    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20 dark:text-emerald-400",
-  sky: "bg-sky-500/10 text-sky-600 ring-sky-500/20 dark:text-sky-400",
-  indigo:
-    "bg-indigo-500/10 text-indigo-600 ring-indigo-500/20 dark:text-indigo-400",
-  amber: "bg-amber-500/10 text-amber-600 ring-amber-500/20 dark:text-amber-400",
-  violet:
-    "bg-violet-500/10 text-violet-600 ring-violet-500/20 dark:text-violet-400",
-  rose: "bg-rose-500/10 text-rose-600 ring-rose-500/20 dark:text-rose-400",
-};
-
 function Stat({
   label,
   value,
@@ -792,7 +535,7 @@ function Stat({
 }: {
   label: string;
   value: number;
-  accent: keyof typeof accentMap;
+  accent: AccentKey;
   suffix?: string;
   subtitle?: string;
   className?: string;
@@ -828,7 +571,7 @@ function BigStat({
 }: {
   label: string;
   value: number;
-  accent: keyof typeof accentMap;
+  accent: AccentKey;
   subtitle?: string;
   className?: string;
 }) {
@@ -863,7 +606,7 @@ function Card({
   children,
 }: {
   eyebrow: string;
-  eyebrowAccent: keyof typeof accentMap;
+  eyebrowAccent: AccentKey;
   title: string;
   subtitle?: string;
   children: React.ReactNode;

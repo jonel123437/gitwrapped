@@ -1,0 +1,21 @@
+export type ShareCardData = {
+  username: string;
+  name: string;
+  avatar: string;
+  year: string;
+  commits: number;
+  prs: number;
+  reviews: number;
+  streak: number;
+  total: number;
+  topLang: string;
+  topLang2: string;
+  topLang3: string;
+  activeDays: number;
+  bestMonth: string;
+  topRepo: string;
+  topRepoStars: number;
+  personalityKey: string;
+  personalityLabel: string;
+  personalityTagline: string;
+};

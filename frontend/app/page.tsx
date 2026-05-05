@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import Image from "next/image";
 import Link from "next/link";
+import { accentMap } from "@/lib/constants/accent.constants";
+import type { AccentKey } from "@/lib/types/accent.types";
 
 export default async function Home() {
   const session = await auth();
@@ -294,18 +296,6 @@ export default async function Home() {
   );
 }
 
-const accentMap: Record<string, string> = {
-  emerald:
-    "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20",
-  indigo:
-    "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 ring-indigo-500/20",
-  sky: "bg-sky-500/10 text-sky-600 dark:text-sky-400 ring-sky-500/20",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20",
-  rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-rose-500/20",
-  violet:
-    "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-violet-500/20",
-};
-
 function Feature({
   icon,
   title,
@@ -315,7 +305,7 @@ function Feature({
   icon: string;
   title: string;
   body: string;
-  accent: keyof typeof accentMap;
+  accent: AccentKey;
 }) {
   return (
     <div className="group relative rounded-2xl border border-zinc-200 bg-zinc-50 p-6 transition-all hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 dark:hover:shadow-black/20">

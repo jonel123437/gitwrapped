@@ -1,170 +1,17 @@
 import { ImageResponse } from "next/og";
+import {
+  parseShareFormat,
+  getShareFormat,
+} from "@/lib/utils/share-formats.utils";
+import { themeFor } from "@/lib/utils/personality.utils";
+import { readShareParams } from "@/lib/utils/share-card.utils";
+import type { ShareCardData } from "@/lib/types/share-card.types";
+import type { ShareFormat } from "@/lib/types/share-formats.types";
+import type { Theme } from "@/lib/types/personality.types";
 
 export const runtime = "edge";
 
-type Format = "landscape" | "portrait" | "square";
-
-const SIZES: Record<Format, { width: number; height: number }> = {
-  landscape: { width: 1200, height: 630 },
-  square: { width: 1080, height: 1080 },
-  portrait: { width: 1080, height: 1920 },
-};
-
-type Data = {
-  username: string;
-  name: string;
-  avatar: string;
-  year: string;
-  commits: number;
-  prs: number;
-  reviews: number;
-  streak: number;
-  total: number;
-  topLang: string;
-  topLang2: string;
-  topLang3: string;
-  activeDays: number;
-  bestMonth: string;
-  topRepo: string;
-  topRepoStars: number;
-  personalityKey: string;
-  personalityLabel: string;
-  personalityTagline: string;
-};
-
-function readParams(params: URLSearchParams): Data {
-  const username = params.get("username") ?? "github-user";
-  return {
-    username,
-    name: params.get("name") ?? username,
-    avatar: params.get("avatar") ?? "",
-    year: params.get("year") ?? new Date().getFullYear().toString(),
-    commits: Number(params.get("commits") ?? 0),
-    prs: Number(params.get("prs") ?? 0),
-    reviews: Number(params.get("reviews") ?? 0),
-    streak: Number(params.get("streak") ?? 0),
-    total: Number(params.get("total") ?? 0),
-    topLang: params.get("topLang") ?? "",
-    topLang2: params.get("topLang2") ?? "",
-    topLang3: params.get("topLang3") ?? "",
-    activeDays: Number(params.get("activeDays") ?? 0),
-    bestMonth: params.get("bestMonth") ?? "",
-    topRepo: params.get("topRepo") ?? "",
-    topRepoStars: Number(params.get("topRepoStars") ?? 0),
-    personalityKey: params.get("personalityKey") ?? "balanced",
-    personalityLabel: params.get("personalityLabel") ?? "Balanced Builder",
-    personalityTagline:
-      params.get("personalityTagline") ?? "steady, consistent, unbothered",
-  };
-}
-
-type Theme = {
-  hero: string;
-  blobA: string;
-  blobB: string;
-  blobC: string;
-  pillBg: string;
-  pillBorder: string;
-  pillText: string;
-  accent: string;
-};
-
-const THEMES: Record<string, Theme> = {
-  "weekend-warrior": {
-    hero: "linear-gradient(135deg, #f472b6 0%, #c084fc 50%, #818cf8 100%)",
-    blobA: "radial-gradient(circle, rgba(244,114,182,0.7), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(129,140,248,0.6), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(192,132,252,0.45), transparent 70%)",
-    pillBg: "rgba(244,114,182,0.18)",
-    pillBorder: "rgba(244,114,182,0.55)",
-    pillText: "#f9a8d4",
-    accent: "#f472b6",
-  },
-  "streak-master": {
-    hero: "linear-gradient(135deg, #fbbf24 0%, #f97316 45%, #ef4444 100%)",
-    blobA: "radial-gradient(circle, rgba(251,191,36,0.7), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(239,68,68,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(249,115,22,0.5), transparent 70%)",
-    pillBg: "rgba(251,191,36,0.18)",
-    pillBorder: "rgba(251,191,36,0.55)",
-    pillText: "#fcd34d",
-    accent: "#f97316",
-  },
-  "nine-to-fiver": {
-    hero: "linear-gradient(135deg, #34d399 0%, #38bdf8 100%)",
-    blobA: "radial-gradient(circle, rgba(52,211,153,0.6), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(56,189,248,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(99,102,241,0.35), transparent 70%)",
-    pillBg: "rgba(52,211,153,0.18)",
-    pillBorder: "rgba(52,211,153,0.55)",
-    pillText: "#6ee7b7",
-    accent: "#34d399",
-  },
-  seasonal: {
-    hero: "linear-gradient(135deg, #fbbf24 0%, #fb7185 60%, #c084fc 100%)",
-    blobA: "radial-gradient(circle, rgba(251,191,36,0.6), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(251,113,133,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(192,132,252,0.45), transparent 70%)",
-    pillBg: "rgba(251,113,133,0.18)",
-    pillBorder: "rgba(251,113,133,0.55)",
-    pillText: "#fda4af",
-    accent: "#fb7185",
-  },
-  sprinter: {
-    hero: "linear-gradient(135deg, #fb7185 0%, #f97316 50%, #fbbf24 100%)",
-    blobA: "radial-gradient(circle, rgba(251,113,133,0.65), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(249,115,22,0.6), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(251,191,36,0.45), transparent 70%)",
-    pillBg: "rgba(251,113,133,0.18)",
-    pillBorder: "rgba(251,113,133,0.55)",
-    pillText: "#fda4af",
-    accent: "#fb7185",
-  },
-  marathoner: {
-    hero: "linear-gradient(135deg, #34d399 0%, #14b8a6 50%, #38bdf8 100%)",
-    blobA: "radial-gradient(circle, rgba(52,211,153,0.65), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(20,184,166,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(56,189,248,0.45), transparent 70%)",
-    pillBg: "rgba(52,211,153,0.18)",
-    pillBorder: "rgba(52,211,153,0.55)",
-    pillText: "#6ee7b7",
-    accent: "#14b8a6",
-  },
-  polyglot: {
-    hero: "linear-gradient(135deg, #34d399 0%, #38bdf8 25%, #818cf8 50%, #f472b6 75%, #fbbf24 100%)",
-    blobA: "radial-gradient(circle, rgba(52,211,153,0.55), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(244,114,182,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(251,191,36,0.45), transparent 70%)",
-    pillBg: "rgba(129,140,248,0.18)",
-    pillBorder: "rgba(129,140,248,0.55)",
-    pillText: "#a5b4fc",
-    accent: "#818cf8",
-  },
-  specialist: {
-    hero: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
-    blobA: "radial-gradient(circle, rgba(56,189,248,0.65), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(99,102,241,0.6), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(129,140,248,0.4), transparent 70%)",
-    pillBg: "rgba(56,189,248,0.18)",
-    pillBorder: "rgba(56,189,248,0.55)",
-    pillText: "#7dd3fc",
-    accent: "#38bdf8",
-  },
-  balanced: {
-    hero: "linear-gradient(135deg, #34d399 0%, #38bdf8 50%, #818cf8 100%)",
-    blobA: "radial-gradient(circle, rgba(52,211,153,0.6), transparent 70%)",
-    blobB: "radial-gradient(circle, rgba(129,140,248,0.55), transparent 70%)",
-    blobC: "radial-gradient(circle, rgba(56,189,248,0.45), transparent 70%)",
-    pillBg: "rgba(52,211,153,0.15)",
-    pillBorder: "rgba(52,211,153,0.4)",
-    pillText: "#34d399",
-    accent: "#38bdf8",
-  },
-};
-
-function themeFor(d: Data): Theme {
-  return THEMES[d.personalityKey] ?? THEMES.balanced;
-}
+type Data = ShareCardData;
 
 function langChips(d: Data, fontSize: number) {
   const langs = [d.topLang, d.topLang2, d.topLang3].filter(Boolean);
@@ -310,17 +157,23 @@ function personalityEyebrow(theme: Theme, fontSize: number) {
   );
 }
 
-function personalityHeadline(d: Data, theme: Theme, fontSize: number) {
+function personalityHeadline(
+  d: Data,
+  theme: Theme,
+  fontSize: number,
+  options?: { wrap?: boolean; width?: number },
+) {
   return (
     <div
       style={{
         display: "flex",
+        ...(options?.wrap ? { flexWrap: "wrap", width: options.width } : null),
         backgroundImage: theme.hero,
         backgroundClip: "text",
         color: "transparent",
         fontWeight: 800,
         letterSpacing: -2,
-        lineHeight: 0.95,
+        lineHeight: options?.wrap ? 0.92 : 0.95,
         fontSize,
         textTransform: "uppercase",
       }}
@@ -419,25 +272,13 @@ function weirdFactLine(d: Data, theme: Theme, fontSize: number) {
 function statRow(d: Data, fontSize: number, max = 4) {
   const items: { label: string; value: string }[] = [];
   if (d.streak > 0)
-    items.push({
-      label: "Longest streak",
-      value: `${d.streak}d`,
-    });
+    items.push({ label: "Longest streak", value: `${d.streak}d` });
   if (d.activeDays > 0)
-    items.push({
-      label: "Active days",
-      value: d.activeDays.toString(),
-    });
+    items.push({ label: "Active days", value: d.activeDays.toString() });
   if (d.prs > 0)
-    items.push({
-      label: "Pull requests",
-      value: d.prs.toLocaleString(),
-    });
+    items.push({ label: "Pull requests", value: d.prs.toLocaleString() });
   if (d.bestMonth)
-    items.push({
-      label: "Peak month",
-      value: d.bestMonth.slice(0, 3),
-    });
+    items.push({ label: "Peak month", value: d.bestMonth.slice(0, 3) });
   const visible = items.slice(0, max);
   if (visible.length === 0) return null;
   return (
@@ -569,317 +410,6 @@ function topRepoLine(d: Data, fontSize: number, stacked = false) {
 
 const TAGLINE = "git.wrapped — Spotify Wrapped, but for your code.";
 
-function renderLandscape(d: Data) {
-  const theme = themeFor(d);
-  return (
-    <div style={{ ...FRAME, padding: 56 }}>
-      {blobs(theme)}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {identityRow(d, 22, 64)}
-        {yearPill(d, theme, 14)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          marginTop: 28,
-          position: "relative",
-        }}
-      >
-        {personalityEyebrow(theme, 18)}
-        {personalityHeadline(d, theme, 96)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          gap: 28,
-          marginTop: 18,
-          position: "relative",
-        }}
-      >
-        {bigNumber(d, theme, 110)}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            paddingBottom: 14,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              fontSize: 22,
-              color: "#d4d4d8",
-              fontWeight: 500,
-            }}
-          >
-            commits
-          </div>
-          <div style={{ display: "flex", fontSize: 16, color: "#a1a1aa" }}>
-            across {d.activeDays} active days
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          marginTop: 14,
-          position: "relative",
-        }}
-      >
-        {weirdFactLine(d, theme, 22)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          marginTop: "auto",
-          alignItems: "center",
-          justifyContent: "space-between",
-          position: "relative",
-        }}
-      >
-        <div style={{ display: "flex", gap: 12 }}>
-          {(d.topLang || d.topLang2) && langChips(d, 14)}
-        </div>
-        <div style={{ display: "flex", fontSize: 13, color: "#71717a" }}>
-          {TAGLINE}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function renderSquare(d: Data) {
-  const theme = themeFor(d);
-  return (
-    <div style={{ ...FRAME, padding: 64 }}>
-      {blobs(theme)}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {identityRow(d, 24, 72)}
-        {yearPill(d, theme, 16)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          marginTop: 56,
-          position: "relative",
-        }}
-      >
-        {personalityEyebrow(theme, 22)}
-        {personalityHeadline(d, theme, 132)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          marginTop: 36,
-          position: "relative",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 20 }}>
-          {bigNumber(d, theme, 180)}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              paddingBottom: 24,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                fontSize: 28,
-                color: "#d4d4d8",
-                fontWeight: 500,
-              }}
-            >
-              commits
-            </div>
-            <div style={{ display: "flex", fontSize: 20, color: "#a1a1aa" }}>
-              across {d.activeDays} active days
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          marginTop: 24,
-          position: "relative",
-        }}
-      >
-        {weirdFactLine(d, theme, 28)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 22,
-          marginTop: "auto",
-          position: "relative",
-        }}
-      >
-        {(d.topLang || d.topLang2) && langChips(d, 18)}
-        {topRepoLine(d, 20)}
-        {statRow(d, 30)}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 16,
-            color: "#71717a",
-            marginTop: 4,
-          }}
-        >
-          {TAGLINE}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function renderPortrait(d: Data) {
-  const theme = themeFor(d);
-  return (
-    <div style={{ ...FRAME, padding: "72px 80px" }}>
-      {blobs(theme)}
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          position: "relative",
-        }}
-      >
-        {identityRow(d, 32, 96)}
-        {yearPill(d, theme, 24)}
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 40,
-          marginTop: 100,
-          position: "relative",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-          {personalityEyebrow(theme, 32)}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              width: 920,
-              backgroundImage: theme.hero,
-              backgroundClip: "text",
-              color: "transparent",
-              fontWeight: 800,
-              letterSpacing: -2,
-              lineHeight: 0.92,
-              fontSize: personalityPortraitSize(d.personalityLabel),
-              textTransform: "uppercase",
-            }}
-          >
-            {d.personalityLabel}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 32 }}>
-          {bigNumber(d, theme, 300)}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              paddingBottom: 38,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                fontSize: 44,
-                color: "#d4d4d8",
-                fontWeight: 500,
-                lineHeight: 1,
-              }}
-            >
-              commits
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 28,
-                color: "#a1a1aa",
-                lineHeight: 1,
-              }}
-            >
-              across {d.activeDays} active days
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex" }}>{weirdFactLine(d, theme, 38)}</div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          flex: 1,
-          flexDirection: "column",
-          justifyContent: "space-between",
-          marginTop: 60,
-          paddingBottom: 8,
-          position: "relative",
-        }}
-      >
-        {(d.topLang || d.topLang2) && langChips(d, 36)}
-        {topRepoLine(d, 36, true)}
-        {statRow(d, 52, 3)}
-        <div
-          style={{
-            display: "flex",
-            fontSize: 28,
-            color: "#71717a",
-          }}
-        >
-          {TAGLINE}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function personalityPortraitSize(label: string): number {
   const longest = label
     .split(/\s+/)
@@ -891,24 +421,270 @@ function personalityPortraitSize(label: string): number {
   return 200;
 }
 
+type LayoutConfig = {
+  framePadding: string | number;
+  identityFont: number;
+  avatarSize: number;
+  yearPillFont: number;
+  eyebrowFont: number;
+  headlineFont: number | ((d: Data) => number);
+  headlineWrap?: { width: number };
+  blockGap: number;
+  bigNumberFont: number;
+  commitsLabelFont: number;
+  commitsSubFont: number;
+  commitsPadBottom: number;
+  factFont: number;
+  langChipFont: number;
+  topRepoFont: number;
+  topRepoStacked?: boolean;
+  statFont: number;
+  statMax?: number;
+  taglineFont: number;
+  showTopRepoInBody: boolean;
+  showStatRowInBody: boolean;
+  bodyGap: number;
+  bodyMarginTop: number | "auto";
+};
+
+const LAYOUTS: Record<ShareFormat, LayoutConfig> = {
+  landscape: {
+    framePadding: 56,
+    identityFont: 22,
+    avatarSize: 64,
+    yearPillFont: 14,
+    eyebrowFont: 18,
+    headlineFont: 96,
+    blockGap: 28,
+    bigNumberFont: 110,
+    commitsLabelFont: 22,
+    commitsSubFont: 16,
+    commitsPadBottom: 14,
+    factFont: 22,
+    langChipFont: 14,
+    topRepoFont: 20,
+    statFont: 30,
+    taglineFont: 13,
+    showTopRepoInBody: false,
+    showStatRowInBody: false,
+    bodyGap: 0,
+    bodyMarginTop: "auto",
+  },
+  square: {
+    framePadding: 64,
+    identityFont: 24,
+    avatarSize: 72,
+    yearPillFont: 16,
+    eyebrowFont: 22,
+    headlineFont: 132,
+    blockGap: 56,
+    bigNumberFont: 180,
+    commitsLabelFont: 28,
+    commitsSubFont: 20,
+    commitsPadBottom: 24,
+    factFont: 28,
+    langChipFont: 18,
+    topRepoFont: 20,
+    statFont: 30,
+    taglineFont: 16,
+    showTopRepoInBody: true,
+    showStatRowInBody: true,
+    bodyGap: 22,
+    bodyMarginTop: "auto",
+  },
+  portrait: {
+    framePadding: "72px 80px",
+    identityFont: 32,
+    avatarSize: 96,
+    yearPillFont: 24,
+    eyebrowFont: 32,
+    headlineFont: (d) => personalityPortraitSize(d.personalityLabel),
+    headlineWrap: { width: 920 },
+    blockGap: 100,
+    bigNumberFont: 300,
+    commitsLabelFont: 44,
+    commitsSubFont: 28,
+    commitsPadBottom: 38,
+    factFont: 38,
+    langChipFont: 36,
+    topRepoFont: 36,
+    topRepoStacked: true,
+    statFont: 52,
+    statMax: 3,
+    taglineFont: 28,
+    showTopRepoInBody: true,
+    showStatRowInBody: true,
+    bodyGap: 0,
+    bodyMarginTop: 60,
+  },
+};
+
+function renderCard(d: Data, format: ShareFormat) {
+  const theme = themeFor(d.personalityKey);
+  const c = LAYOUTS[format];
+  const headlineFont =
+    typeof c.headlineFont === "function" ? c.headlineFont(d) : c.headlineFont;
+  const isPortrait = format === "portrait";
+
+  return (
+    <div style={{ ...FRAME, padding: c.framePadding }}>
+      {blobs(theme)}
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          position: "relative",
+        }}
+      >
+        {identityRow(d, c.identityFont, c.avatarSize)}
+        {yearPill(d, theme, c.yearPillFont)}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: isPortrait ? 22 : c.blockGap === 56 ? 10 : 8,
+          marginTop: isPortrait ? 100 : c.blockGap === 56 ? 56 : 28,
+          position: "relative",
+        }}
+      >
+        {personalityEyebrow(theme, c.eyebrowFont)}
+        {personalityHeadline(d, theme, headlineFont, {
+          wrap: Boolean(c.headlineWrap),
+          width: c.headlineWrap?.width,
+        })}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: format === "square" ? "column" : "row",
+          alignItems: format === "square" ? undefined : "flex-end",
+          gap: isPortrait ? 32 : 28,
+          marginTop: isPortrait ? 40 : 18,
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: isPortrait ? 32 : 20,
+          }}
+        >
+          {bigNumber(d, theme, c.bigNumberFont)}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: isPortrait ? 8 : 4,
+              paddingBottom: c.commitsPadBottom,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                fontSize: c.commitsLabelFont,
+                color: "#d4d4d8",
+                fontWeight: 500,
+                lineHeight: isPortrait ? 1 : undefined,
+              }}
+            >
+              commits
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: c.commitsSubFont,
+                color: "#a1a1aa",
+                lineHeight: isPortrait ? 1 : undefined,
+              }}
+            >
+              across {d.activeDays} active days
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          marginTop: isPortrait ? 40 : format === "square" ? 24 : 14,
+          position: "relative",
+        }}
+      >
+        {weirdFactLine(d, theme, c.factFont)}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flex: isPortrait ? 1 : undefined,
+          flexDirection: "column",
+          justifyContent: isPortrait ? "space-between" : undefined,
+          gap: c.bodyGap,
+          marginTop: c.bodyMarginTop,
+          paddingBottom: isPortrait ? 8 : undefined,
+          alignItems: format === "landscape" ? undefined : undefined,
+          position: "relative",
+        }}
+      >
+        {format === "landscape" ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", gap: 12 }}>
+              {(d.topLang || d.topLang2) && langChips(d, c.langChipFont)}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: c.taglineFont,
+                color: "#71717a",
+              }}
+            >
+              {TAGLINE}
+            </div>
+          </div>
+        ) : (
+          <>
+            {(d.topLang || d.topLang2) && langChips(d, c.langChipFont)}
+            {c.showTopRepoInBody &&
+              topRepoLine(d, c.topRepoFont, c.topRepoStacked)}
+            {c.showStatRowInBody && statRow(d, c.statFont, c.statMax)}
+            <div
+              style={{
+                display: "flex",
+                fontSize: c.taglineFont,
+                color: "#71717a",
+                marginTop: format === "square" ? 4 : 0,
+              }}
+            >
+              {TAGLINE}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
-  const formatParam = params.get("format") ?? "landscape";
-  const format: Format =
-    formatParam === "portrait" || formatParam === "square"
-      ? formatParam
-      : "landscape";
+  const format = parseShareFormat(params.get("format") ?? undefined);
+  const data = readShareParams(params);
+  const spec = getShareFormat(format);
 
-  const data = readParams(params);
-  const element =
-    format === "portrait"
-      ? renderPortrait(data)
-      : format === "square"
-        ? renderSquare(data)
-        : renderLandscape(data);
-
-  return new ImageResponse(element, {
-    ...SIZES[format],
+  return new ImageResponse(renderCard(data, format), {
+    width: spec.width,
+    height: spec.height,
     headers: {
       "Cache-Control": "public, max-age=300, s-maxage=300",
     },
