@@ -1,6 +1,11 @@
+import { auth } from "@/auth";
+import Image from "next/image";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+  const isAuthed = Boolean(session?.user);
+
   return (
     <div className="flex flex-1 flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
       <header className="sticky top-0 z-40 border-b border-zinc-200/60 bg-zinc-50/80 backdrop-blur-md dark:border-zinc-800/60 dark:bg-zinc-950/80">
@@ -22,12 +27,31 @@ export default function Home() {
               FAQ
             </a>
           </nav>
-          <Link
-            href="/dashboard"
-            className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 shadow-sm transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            Sign in
-          </Link>
+          {isAuthed && session?.user ? (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white/70 px-2 py-1 pl-1 text-sm font-medium text-zinc-700 shadow-sm backdrop-blur transition-all hover:scale-[1.03] hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            >
+              {session.user.image && (
+                <Image
+                  src={session.user.image}
+                  alt={session.user.name ?? "You"}
+                  width={28}
+                  height={28}
+                  className="rounded-full"
+                  unoptimized
+                />
+              )}
+              <span className="pr-2">Dashboard</span>
+            </Link>
+          ) : (
+            <Link
+              href="/dashboard"
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 shadow-sm transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </header>
 
@@ -57,7 +81,7 @@ export default function Home() {
               href="/dashboard"
               className="group flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 shadow-lg shadow-zinc-900/10 transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/10 dark:hover:bg-zinc-300"
             >
-              Connect with GitHub
+              {isAuthed ? "Open your dashboard" : "Connect with GitHub"}
               <span className="transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
             <a
@@ -210,7 +234,7 @@ export default function Home() {
               href="/dashboard"
               className="group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full bg-zinc-900 px-6 text-sm font-medium text-zinc-50 shadow-lg shadow-zinc-900/10 transition-all hover:scale-[1.03] hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:shadow-zinc-100/10 dark:hover:bg-zinc-300"
             >
-              Connect with GitHub
+              {isAuthed ? "Open your dashboard" : "Connect with GitHub"}
               <span className="transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
           </div>

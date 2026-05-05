@@ -6,9 +6,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     GitHub({
       clientId: process.env.AUTH_GITHUB_ID,
       clientSecret: process.env.AUTH_GITHUB_SECRET,
-      authorization: { params: { scope: "read:user user:email" } },
+      authorization: { params: { scope: "read:user user:email repo" } },
     }),
   ],
+  pages: {
+    signIn: "/signin",
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account?.access_token) {
