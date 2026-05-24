@@ -23,6 +23,11 @@ export type GitHubRepo = {
 
 export type ContributionDay = { date: string; contributionCount: number };
 
+export type CommitContributionsByRepository = {
+  repository: { name: string; url: string; description: string | null };
+  contributions: { totalCount: number };
+};
+
 export type ContributionsResponse = {
   user: {
     contributionsCollection: {
@@ -30,6 +35,7 @@ export type ContributionsResponse = {
       totalPullRequestContributions: number;
       totalPullRequestReviewContributions: number;
       totalIssueContributions: number;
+      commitContributionsByRepository: CommitContributionsByRepository[];
       contributionCalendar: {
         totalContributions: number;
         weeks: { contributionDays: ContributionDay[] }[];

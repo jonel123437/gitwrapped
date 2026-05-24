@@ -90,6 +90,10 @@ export default async function DashboardPage({
   let totalReviews = 0;
   let totalContributions = 0;
   const allDays: ContributionDay[] = [];
+  const repoCommitMap = new Map<
+    string,
+    { name: string; url: string; description: string | null; commits: number }
+  >();
   for (const r of contributionResults) {
     const c = r.user.contributionsCollection;
     totalCommits += c.totalCommitContributions;
@@ -98,6 +102,22 @@ export default async function DashboardPage({
     totalContributions += c.contributionCalendar.totalContributions;
     for (const w of c.contributionCalendar.weeks) {
       for (const d of w.contributionDays) allDays.push(d);
+    }
+    for (const {
+      repository,
+      contributions,
+    } of c.commitContributionsByRepository) {
+      const existing = repoCommitMap.get(repository.url);
+      if (existing) {
+        existing.commits += contributions.totalCount;
+      } else {
+        repoCommitMap.set(repository.url, {
+          name: repository.name,
+          url: repository.url,
+          description: repository.description,
+          commits: contributions.totalCount,
+        });
+      }
     }
   }
   allDays.sort((a, b) => a.date.localeCompare(b.date));
@@ -123,8 +143,8 @@ export default async function DashboardPage({
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  const topRepos = [...ownRepos]
-    .sort((a, b) => b.stargazers_count - a.stargazers_count)
+  const topRepos = [...repoCommitMap.values()]
+    .sort((a, b) => b.commits - a.commits)
     .slice(0, 5);
 
   const memberSinceYear = new Date(user.created_at).getFullYear();
@@ -172,7 +192,7 @@ export default async function DashboardPage({
     activeDays,
     bestMonth,
     topRepo: topRepo?.name ?? "",
-    topRepoStars: topRepo?.stargazers_count ?? 0,
+    topRepoCommits: topRepo?.commits ?? 0,
     personalityKey: personality.key,
     personalityLabel: personality.label,
     personalityTagline: personality.tagline,
@@ -392,16 +412,16 @@ export default async function DashboardPage({
             eyebrow="Repositories"
             eyebrowAccent="indigo"
             title="Top repositories"
-            subtitle="Sorted by stars"
+            subtitle="Sorted by commits"
           >
             {topRepos.length === 0 ? (
               <p className="text-sm text-zinc-500">No repos found.</p>
             ) : (
               <ul className="-mx-2 space-y-1">
                 {topRepos.map((r) => (
-                  <li key={r.id} className="min-w-0">
+                  <li key={r.url} className="min-w-0">
                     <a
-                      href={r.html_url}
+                      href={r.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex w-full items-start justify-between gap-4 rounded-xl px-2 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
@@ -416,18 +436,24 @@ export default async function DashboardPage({
                           </p>
                         )}
                       </div>
-                      <div className="flex shrink-0 items-center gap-1 text-sm text-zinc-500 tabular-nums">
+                      <div className="flex shrink-0 items-center gap-1.5 text-sm text-zinc-500 tabular-nums">
                         <svg
                           width="14"
                           height="14"
                           viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="text-amber-500"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-emerald-500"
                           aria-hidden
                         >
-                          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                          <circle cx="12" cy="12" r="3" />
+                          <line x1="3" y1="12" x2="9" y2="12" />
+                          <line x1="15" y1="12" x2="21" y2="12" />
                         </svg>
-                        {r.stargazers_count}
+                        {r.commits.toLocaleString()}
                       </div>
                     </a>
                   </li>

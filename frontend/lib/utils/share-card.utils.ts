@@ -20,7 +20,7 @@ export function buildShareParams(
     activeDays: d.activeDays.toString(),
     bestMonth: d.bestMonth,
     topRepo: d.topRepo,
-    topRepoStars: d.topRepoStars.toString(),
+    topRepoCommits: d.topRepoCommits.toString(),
     personalityKey: d.personalityKey,
     personalityLabel: d.personalityLabel,
     personalityTagline: d.personalityTagline,
@@ -46,7 +46,7 @@ export function readShareParams(params: URLSearchParams): ShareCardData {
     activeDays: Number(params.get("activeDays") ?? 0),
     bestMonth: params.get("bestMonth") ?? "",
     topRepo: params.get("topRepo") ?? "",
-    topRepoStars: Number(params.get("topRepoStars") ?? 0),
+    topRepoCommits: Number(params.get("topRepoCommits") ?? 0),
     personalityKey: params.get("personalityKey") ?? "balanced",
     personalityLabel: params.get("personalityLabel") ?? "Balanced Builder",
     personalityTagline:

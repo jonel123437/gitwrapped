@@ -6,6 +6,16 @@ export const CONTRIBUTIONS_QUERY = /* GraphQL */ `
         totalPullRequestContributions
         totalPullRequestReviewContributions
         totalIssueContributions
+        commitContributionsByRepository(maxRepositories: 25) {
+          repository {
+            name
+            url
+            description
+          }
+          contributions {
+            totalCount
+          }
+        }
         contributionCalendar {
           totalContributions
           weeks {

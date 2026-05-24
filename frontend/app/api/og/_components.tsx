@@ -318,7 +318,7 @@ export function statRow(d: Data, fontSize: number, max = 4) {
 
 export function topRepoLine(d: Data, fontSize: number, stacked = false) {
   if (!d.topRepo) return null;
-  const star = fontSize * 0.85;
+  const icon = fontSize * 0.9;
   const value = (
     <div
       style={{
@@ -331,20 +331,26 @@ export function topRepoLine(d: Data, fontSize: number, stacked = false) {
       }}
     >
       <div style={{ display: "flex" }}>{`/${truncate(d.topRepo, 22)}`}</div>
-      {d.topRepoStars > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {d.topRepoCommits > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <svg
-            width={star}
-            height={star}
+            width={icon}
+            height={icon}
             viewBox="0 0 24 24"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
             style={{ display: "flex" }}
           >
-            <path
-              d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
-              fill="#fbbf24"
-            />
+            <circle cx="12" cy="12" r="3" />
+            <line x1="3" y1="12" x2="9" y2="12" />
+            <line x1="15" y1="12" x2="21" y2="12" />
           </svg>
-          <div style={{ display: "flex" }}>{d.topRepoStars}</div>
+          <div style={{ display: "flex" }}>
+            {d.topRepoCommits.toLocaleString()}
+          </div>
         </div>
       )}
     </div>

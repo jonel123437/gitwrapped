@@ -14,7 +14,7 @@ export type ShareCardData = {
   activeDays: number;
   bestMonth: string;
   topRepo: string;
-  topRepoStars: number;
+  topRepoCommits: number;
   personalityKey: string;
   personalityLabel: string;
   personalityTagline: string;
